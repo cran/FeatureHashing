@@ -1,7 +1,7 @@
 #'@useDynLib FeatureHashing
 #'@importFrom Rcpp evalCpp
-.onLoad <- function(libname, pkgname) {
-}
+#'@import digest
+.onLoad <- function(libname, pkgname) { }
 
 #'@title test.tag
 #'@description This is a vector to demo the concatenated feature.
