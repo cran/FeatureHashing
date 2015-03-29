@@ -16,8 +16,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "pmurhashAPI.h"
+#include <string>
+#include <vector>
 
-const uint32_t 
-  MURMURHASH3_H_SEED = 3120602769LL,
-  MURMURHASH3_XI_SEED = 79193439LL;
+std::vector<std::string> split(const std::string& src, const std::string& delim);

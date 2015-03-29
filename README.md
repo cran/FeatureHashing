@@ -3,6 +3,8 @@ FeatureHashing
 
 Implement feature hashing with R
 
+
+
 ## Introduction
 
 [Feature hashing](http://en.wikipedia.org/wiki/Feature_hashing), also called as the hashing trick, is a method to
@@ -10,189 +12,160 @@ transform features to vector. Without looking the indices up in an
 associative array, it applies a hash function to the features and uses their
 hash values as indices directly.
   
-The package FeatureHashing implements the method in Weinberger et. al. (2009) to transform
+The package FeatureHashing implements the method in (Weinberger, Dasgupta, Langford, Smola, and Attenberg, 2009) to transform
 a `data.frame` to sparse matrix. The package provides a formula interface similar to model.matrix 
 in R and Matrix::sparse.model.matrix in the package Matrix. Splitting of concatenated data, 
 check the help of `test.tag` for explanation of concatenated data, during the construction of the model matrix.
 
-### When will I use Feature Hashing?
+## Installation
 
-- I don't need to know the meaning of the cofficients.
+To install the stable version from Cran, run this command:
+```r
+install.packages("FeatureHashing")
+```
 
-    After feature hashing, it is hard to connect the trained cofficients to the original data.
+For up-to-date version, please install from github. Windows user will need to install [RTools](http://cran.r-project.org/bin/windows/Rtools/) first.
 
-- I cannot convert all data including training data and testing data to a model matrix at once.
+```r
+devtools::install_github('wush978/FeatureHashing')
+```
 
-    To make the model matrix consistent, I need to synchronize the indices between different conversions. Feature
-    hashing automatically synchronize the indices via the hash function.
+### When should we use Feature Hashing?
 
-- I need to handle concatenated data.
+Feature hashing is useful when the user does not easy to know the dimension of the feature vector. 
+For example, the bag-of-word representation in document classification problem requires scanning entire dataset to know how many words we have, i.e. the dimension of the feature vector.
 
-    Converting concatenated data to model matrix requires splitting the feature and building some temporal data with `model.matrix`. Feature Hashing supports the splitting of the concatenated data on the fly with simple formula interface. The user does not need to call `strsplit` and spend a lot of memory for temporal data.
+In general, feature hashing is useful in the following environment:
 
-## Demo
+- Streaming Environment
+- Distirbuted Environment
 
-### Concatenated Data
+Because it is expensive or impossible to know the real dimension of the feature vector.
+
+## Getting Started
+
+The following scripts show how to use the `FeatureHashing` to construct `Matrix::dgCMatrix` and train a model in other packages which supports `Matrix::dgCMatrix` as input.
+
+The dataset is a sample from iPinYou dataset which is described in (Zhang, Yuan, Wang, and Shen, 2014).
+
+### Logistic Regression with [`glmnet`](http://cran.r-project.org/web/packages/glmnet/index.html)
 
 
 ```r
-library(methods)
+# The following script assumes that the data.frame
+# of the training dataset and testing dataset are 
+# assigned to variable `ipinyou.train` and `ipinyou.test`
+# respectively
+
 library(FeatureHashing)
-
-# The tag-like feature
-data(test.tag)
-df <- data.frame(a = test.tag, b = rnorm(length(test.tag)))
-head(df)
 ```
 
 ```
-##                                        a        b
-## 1                       1,27,19,25,tp,tw  1.72226
-## 2                       1,27,19,25,tp,tw -0.83017
-## 3 25,1,19,6,29,17,16,21,26,23,27,4,ty,tw  0.02199
-## 4                               19,tp,tw  0.22165
-## 5                                  19,tw  0.79661
-## 6                                 ,ch,tw -1.10220
+## Loading required package: methods
 ```
 
 ```r
-m <- hashed.model.matrix(~ tag(a, split = ",", type = "existence"):b, df, 2^6,
- keep.hashing_mapping = TRUE)
-# The column `a` is splitted by "," and have an interaction with "b":
-mapping <- unlist(as.list(attr(m, "mapping")))
-names(mapping)
+# Checking version.
+stopifnot(packageVersion("FeatureHashing") >= package_version("0.9"))
+
+data(ipinyou)
+f <- ~ IP + Region + City + AdExchange + Domain +
+  URL + AdSlotId + AdSlotWidth + AdSlotHeight +
+  AdSlotVisibility + AdSlotFormat + CreativeID +
+  Adid + split(UserTag, delim = ",")
+# if the version of FeatureHashing is 0.8, please use the following command:
+# m.train <- as(hashed.model.matrix(f, ipinyou.train, 2^16, transpose = FALSE), "dgCMatrix")
+m.train <- hashed.model.matrix(f, ipinyou.train, 2^16)
+m.test <- hashed.model.matrix(f, ipinyou.test, 2^16)
+
+# logistic regression with glmnet
+
+library(glmnet)
 ```
 
 ```
-##  [1] "a20"    "a"      "a21"    "atn:b"  "ant:b"  "a19:b"  "akh:b" 
-##  [8] "a25:b"  "a16:b"  "atw:b"  "b"      "a4:b"   "a10:b"  "a1:b"  
-## [15] "ahc"    "atc"    "a23"    "a24"    "a25"    "a26"    "a27"   
-## [22] "antw"   "akh"    "a29"    "atn"    "a30"    "atp"    "a1"    
-## [29] "a11:b"  "a8:b"   "a23:b"  "ach:b"  "a20:b"  "ahc:b"  "atc:b" 
-## [36] "a29:b"  "a26:b"  "a17:b"  "a3"     "ant"    "a4"     "a6"    
-## [43] "atw"    "a8"     "ach"    "aty"    "a9"     "ail"    "a10"   
-## [50] "a11"    "ail:b"  "a3:b"   "a9:b"   "atp:b"  "a12"    "a27:b" 
-## [57] "a:b"    "antw:b" "aty:b"  "a15:b"  "a24:b"  "a21:b"  "a6:b"  
-## [64] "a12:b"  "a30:b"  "a15"    "a16"    "a17"    "a19"
-```
-
-### Feature Hashing
-
-
-```r
-# Construct the model matrix. The transposed matrix is returned by default.
-m <- hashed.model.matrix(~ ., CO2, 2^6, keep.hashing_mapping = TRUE)
-mapping <- as.list(attr(m, "mapping"))
-# Print the matrix via dgCMatrix
-as(m, "dgCMatrix")[1:20,1:17]
-```
-
-```
-## 20 x 17 sparse Matrix of class "dgCMatrix"
-```
-
-```
-##    [[ suppressing 17 column names '1', '2', '3' ... ]]
-```
-
-```
-##                                       
-## <NA> 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
-## <NA> . . . . . . . . . . . . . . . . .
+## Loading required package: Matrix
+## Loaded glmnet 1.9-8
 ```
 
 ```r
-# Check the result of hashing
-mapping <- unlist(as.list(attr(m, "mapping")))
-mapping %% 2^6 # the 9-th row is conc
+cv.g.lr <- cv.glmnet(m.train, ipinyou.train$IsClick,
+  family = "binomial")#, type.measure = "auc")
+p.lr <- predict(cv.g.lr, m.test, s="lambda.min")
+auc(ipinyou.test$IsClick, p.lr)
 ```
 
 ```
-##            PlantQn1            PlantQn2            PlantQn3 
-##                  33                  37                   6 
-##              uptake     TypeMississippi    Treatmentchilled 
-##                  48                  16                  18 
-##            PlantMn1            PlantMn2            PlantMn3 
-##                  22                   1                  20 
-##            PlantQc1            PlantQc2            PlantQc3 
-##                   5                  26                  45 
-## Treatmentnonchilled            PlantMc1            PlantMc2 
-##                  31                  54                  41 
-##            PlantMc3                conc          TypeQuebec 
-##                  41                  30                   6
+## [1] 0.5077
 ```
+
+### Gradient Boosted Decision Tree with [`xgboost`](http://cran.r-project.org/web/packages/xgboost/index.html)
+
+Following the script above, 
+
 
 ```r
-# Check the rate of collision
-mean(duplicated(mapping %% 2^6))
+# GBDT with xgboost
+
+library(xgboost)
+
+cv.g.gdbt <- xgboost(m.train, ipinyou.train$IsClick, max.depth=7, eta=0.1,
+  nround = 100, objective = "binary:logistic", verbose = ifelse(interactive(), 1, 0))
+p.lm <- predict(cv.g.gdbt, m.test)
+glmnet::auc(ipinyou.test$IsClick, p.lm)
 ```
 
 ```
-## [1] 0.1111
+## [1] 0.6555
 ```
 
-```r
-# The result is CSCMatrix which supports simple subsetting and matrix-vector
-# multiplication
-# rnorm(2^6) %*% m
 
-# Detail of the hashing
-## The main effect is hashed via `hash_h`
-all(hash_h(names(mapping)) %% 2^6 == mapping %% 2^6)
-```
+### Per-Coordinate FTRL-Proximal with $L_1$ and $L_2$ Regularization for Logistic Regression
 
-```
-## [1] TRUE
-```
+The following scripts use an implementation of the FTRL-Proximal for Logistic Regresion, which is published in (McMahan, Holt, Sculley, Young, Ebner, Grady, Nie, Phillips, Davydov, Golovin, Chikkerur, Liu, Wattenberg, Hrafnkelsson, Boulos, and Kubica, 2013), to predict the probability (1-step prediction) and update the model simultaneously.
 
-```r
-## The sign is corrected by `hash_xi`
-hash_xi(names(mapping))
-```
 
-```
-##  [1] -1  1  1 -1 -1  1 -1 -1  1  1  1  1 -1  1 -1  1  1  1
-```
 
 ```r
-## The interaction term is implemented as follow:
-m2 <- hashed.model.matrix(~ .^2, CO2, 2^6, keep.hashing_mapping = TRUE)
-mapping2 <- unlist(as.list(attr(m2, "mapping")))
-mapping2[2] # PlantQn2:uptake
+source(system.file("ftprl.R", package = "FeatureHashing"))
+
+m.train <- hashed.model.matrix(f, ipinyou.train, 2^16, transpose = TRUE)
+ftprl <- initialize.ftprl(0.1, 1, 0.1, 0.1, 2^16)
+ftprl <- update.ftprl(ftprl, m.train, ipinyou.train$IsClick, predict = TRUE)
+auc(ipinyou.train$IsClick, attr(ftprl, "predict"))
 ```
 
 ```
-##  PlantQn1 
-## 3.789e+09
+## [1] 0.5986
 ```
 
-```r
-h1 <- mapping2["PlantQn2"]
-h2 <- mapping2["uptake"]
-library(pack)
-hash_h(rawToChar(c(numToRaw(h1, 4), numToRaw(h2, 4)))) # should be mapping2[2]
-```
+If we use the same algorithm to predict the click through rate of the 3rd season of iPinYou, the overall AUC will be 0.77 which is comparable to the overall AUC of the 3rd season 0.76 reported in (Zhang, Yuan, Wang, et al., 2014).
 
-```
-## [1] 974267571
-```
+## Supported Data Structure
 
+- character and factor
+- numeric and integer
+- array, i.e. concatenated strings such as `c("a,b", "a,b,c", "a,c", "")`
 
+## Reference
+
+[1] H. B. McMahan, G. Holt, D. Sculley, et al. "Ad click
+prediction: a view from the trenches". In: _The 19th ACM SIGKDD
+International Conference on Knowledge Discovery and Data Mining,
+KDD 2013, Chicago, IL, USA, August 11-14, 2013_. Ed. by I. S.
+Dhillon, Y. Koren, R. Ghani, T. E. Senator, P. Bradley, R. Parekh,
+J. He, R. L. Grossman and R. Uthurusamy. ACM, 2013, pp. 1222-1230.
+DOI: 10.1145/2487575.2488200. <URL:
+http://doi.acm.org/10.1145/2487575.2488200>.
+
+[2] K. Q. Weinberger, A. Dasgupta, J. Langford, et al. "Feature
+hashing for large scale multitask learning". In: _Proceedings of
+the 26th Annual International Conference on Machine Learning, ICML
+2009, Montreal, Quebec, Canada, June 14-18, 2009_. Ed. by A. P.
+Danyluk, L. Bottou and M. L. Littman. 2009, pp. 1113-1120. DOI:
+10.1145/1553374.1553516. <URL:
+http://doi.acm.org/10.1145/1553374.1553516>.
+
+[3] W. Zhang, S. Yuan, J. Wang, et al. "Real-Time Bidding
+Benchmarking with iPinYou Dataset". In: _arXiv preprint
+arXiv:1407.7073_ (2014).

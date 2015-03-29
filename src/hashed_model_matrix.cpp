@@ -1,9 +1,27 @@
+/*
+ * This file is part of FeatureHashing
+ * Copyright (C) 2014-2015 Wush Wu
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of  MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <cstring>
 #include <memory>
 #include <boost/detail/endian.hpp>
 #include <Rcpp.h>
 #include "digestlocal.h"
-#include "tag.h"
+#include "split.h"
 
 #ifdef linux
 #include <byteswap.h>
@@ -65,6 +83,16 @@ public:
 //
 //};
 
+class NullHashFunction : public HashFunction {
+  
+  public:
+  
+  virtual uint32_t operator()(const char* buf, int size, bool is_interaction = false) {
+    return 1;
+  }
+  
+};
+
 class MurmurHash3HashFunction : public HashFunction {
   
   uint32_t seed;
@@ -125,11 +153,11 @@ public:
       key.append(":");
       key.append(inverse_mapping[src[1]]);
       #endif
-      e[key.c_str()] = wrap(retval);
+      e[key.c_str()] = wrap((int) retval);
       inverse_mapping[retval] = key;
     } 
     else {
-      e[buf] = wrap(retval);
+      e[buf] = wrap((int) retval);
       inverse_mapping[retval] = buf;
     }
     return retval;
@@ -341,6 +369,12 @@ protected:
   CacheTagType cache_tags;
   
   virtual void get_tags(size_t i) = 0;
+  
+  std::vector<std::string> split_tags(const std::string& src) {
+    std::vector<std::string> temp(split(src, delim));
+    temp.erase(std::remove(temp.begin(), temp.end(), ""), temp.end());
+    return temp;
+  }
 
 public:
   
@@ -387,7 +421,7 @@ protected:
       cache_tags.clear();
     } else {
       const char* str = CHAR(STRING_ELT(plevels, src[i] - 1));
-      std::vector<std::string> temp(split(str, delim));
+      std::vector<std::string> temp(split_tags(str));
       cache_splitted.swap(temp);
       cache_tags.clear();
       cache_tags.insert(cache_splitted.begin(), cache_splitted.end());
@@ -419,7 +453,7 @@ protected:
       cache_tags.clear();
     } else {
       const char* str = CHAR(STRING_ELT(psrc, i));
-      std::vector<std::string> temp(split(str, delim));
+      std::vector<std::string> temp(split_tags(str));
       cache_splitted.swap(temp);
       cache_tags.clear();
       cache_tags.insert(cache_splitted.begin(), cache_splitted.end());    
@@ -450,7 +484,7 @@ protected:
       cache_tags.clear();
     } else {
       const char* str = CHAR(STRING_ELT(plevels, src[i] - 1));
-      std::vector<std::string> temp(split(str, delim));
+      std::vector<std::string> temp(split_tags(str));
       cache_tags.swap(temp);
     }
   }
@@ -479,7 +513,7 @@ protected:
       cache_tags.clear();
     } else {
       const char* str = CHAR(STRING_ELT(psrc, i));
-      std::vector<std::string> temp(split(str, delim));
+      std::vector<std::string> temp(split_tags(str));
       cache_tags.swap(temp);
     }
   }
@@ -573,11 +607,11 @@ const ConvertersVec get_converters(
   NumericMatrix tfactors(wrap(tf.attr("factors")));
   CharacterVector reference_name, feature_name;
   Environment feature_hashing(Environment::namespace_env("FeatureHashing"));
-  Function parse_tag(feature_hashing["parse_tag"]);
+  Function parse_split(feature_hashing["parse_split"]);
   std::set<int> specials;
   {
     List tmp(tf.attr("specials"));
-    SEXP ptag = tmp["tag"];
+    SEXP ptag = tmp["split"];
     if (!Rf_isNull(ptag)) {
       IntegerVector tmpvec(ptag);
       specials.insert(tmpvec.begin(), tmpvec.end());
@@ -638,7 +672,7 @@ const ConvertersVec get_converters(
           #ifdef NOISY_DEBUG
           Rprintf(" (parsing tag..) ");
           #endif
-          List expression(parse_tag(wrap(rname)));
+          List expression(parse_split(wrap(rname)));
           rname.assign(as<std::string>(expression["reference_name"]));
           #ifdef NOISY_DEBUG
           Rprintf(" (rname ==> %s) ", rname.c_str());
@@ -649,7 +683,7 @@ const ConvertersVec get_converters(
           Rprintf("%s\n", rclass.c_str());
           #endif
           std::string 
-            delim(as<std::string>(expression["split"])), 
+            delim(as<std::string>(expression["delim"])), 
             type(as<std::string>(expression["type"]));
           #ifdef NOISY_DEBUG
           Rprintf("delim: %s type: %s\n", delim.c_str(), type.c_str());
@@ -704,7 +738,7 @@ const ConvertersVec get_converters(
 } 
 
 template<typename DataFrameLike>
-SEXP hashed_model_matrix(RObject tf, DataFrameLike data, unsigned long hash_size, bool transpose, S4 retval, bool keep_hashing_mapping) {
+SEXP hashed_model_matrix(RObject tf, DataFrameLike data, unsigned long hash_size, bool transpose, S4 retval, bool keep_hashing_mapping, bool is_xi) {
   if (hash_size > 4294967296) throw std::invalid_argument("hash_size is too big!");
   NameClassMapping reference_class(get_class(data));
   Environment e(Environment::base_env().new_child(wrap(true)));
@@ -714,7 +748,8 @@ SEXP hashed_model_matrix(RObject tf, DataFrameLike data, unsigned long hash_size
   } else {
     pHF.reset(new MurmurHash3HashFunction(MURMURHASH3_H_SEED));
   }
-  pBHF.reset(new MurmurHash3HashFunction(MURMURHASH3_XI_SEED));
+  if (is_xi) pBHF.reset(new MurmurHash3HashFunction(MURMURHASH3_XI_SEED));
+  else pBHF.reset(new NullHashFunction);
   ConvertersVec converters(get_converters(reference_class, tf, data, pHF.get(), pBHF.get()));
   #ifdef NOISY_DEBUG
   Rprintf("The size of convertres is %d\n", converters.size());
@@ -810,12 +845,19 @@ SEXP hashed_model_matrix(RObject tf, DataFrameLike data, unsigned long hash_size
     retval.slot("Dimnames") = dimnames;
   }
   retval.slot("factors") = List();
+  {
+    CharacterVector key(e.ls(true));
+    std::for_each(key.begin(), key.end(), [&e, &hash_size](const char* s) {
+      uint32_t *p = (uint32_t*) INTEGER(e[s]);
+      p[0] = p[0] % hash_size;
+    });
+  }
   retval.attr("mapping") = e;
   return retval;
 }
 
 //[[Rcpp::export(".hashed.model.matrix.dataframe")]]
-SEXP hashed_model_matrix_dataframe(RObject tf, DataFrame data, unsigned long hash_size, bool transpose, S4 retval, bool keep_hashing_mapping) {
-  return hashed_model_matrix<DataFrame>(tf, data, hash_size, transpose, retval, keep_hashing_mapping);
+SEXP hashed_model_matrix_dataframe(RObject tf, DataFrame data, unsigned long hash_size, bool transpose, S4 retval, bool keep_hashing_mapping, bool is_xi) {
+  return hashed_model_matrix<DataFrame>(tf, data, hash_size, transpose, retval, keep_hashing_mapping, is_xi);
 }
 

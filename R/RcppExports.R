@@ -17,18 +17,26 @@ tomatrix <- function(m) {
     .Call('FeatureHashing_tomatrix', PACKAGE = 'FeatureHashing', m)
 }
 
-#'@export hash_xi
-hash_xi <- function(src) {
+.hashed.model.matrix.dataframe <- function(tf, data, hash_size, transpose, retval, keep_hashing_mapping, is_xi) {
+    .Call('FeatureHashing_hashed_model_matrix_dataframe', PACKAGE = 'FeatureHashing', tf, data, hash_size, transpose, retval, keep_hashing_mapping, is_xi)
+}
+
+#'@export hash.sign
+hash.sign <- function(src) {
     .Call('FeatureHashing_xi', PACKAGE = 'FeatureHashing', src)
 }
 
-#'@export hash_h
-hash_h <- function(src) {
+#'@export hashed.value
+hashed.value <- function(src) {
     .Call('FeatureHashing_h', PACKAGE = 'FeatureHashing', src)
 }
 
-.hashed.model.matrix.dataframe <- function(tf, data, hash_size, transpose, retval, keep_hashing_mapping) {
-    .Call('FeatureHashing_hashed_model_matrix_dataframe', PACKAGE = 'FeatureHashing', tf, data, hash_size, transpose, retval, keep_hashing_mapping)
+#'@title Convert the integer to raw vector with endian correction
+#'@param src integer value.
+#'@return raw vector with length 4
+#'@export
+intToRaw <- function(src) {
+    .Call('FeatureHashing_intToRaw', PACKAGE = 'FeatureHashing', src)
 }
 
 Xv <- function(m, v, retval) {
@@ -39,19 +47,19 @@ vX <- function(v, m, retval) {
     .Call('FeatureHashing_vX', PACKAGE = 'FeatureHashing', v, m, retval)
 }
 
+split_existence <- function(src, delim) {
+    .Call('FeatureHashing_split_existence', PACKAGE = 'FeatureHashing', src, delim)
+}
+
+split_count <- function(src, delim) {
+    .Call('FeatureHashing_split_count', PACKAGE = 'FeatureHashing', src, delim)
+}
+
 .selectColumn <- function(m, index, drop = TRUE, Rretval = NULL) {
     .Call('FeatureHashing_selectColumn', PACKAGE = 'FeatureHashing', m, index, drop, Rretval)
 }
 
 .selectRow <- function(m, index, drop = TRUE, Rretval = NULL) {
     .Call('FeatureHashing_selectRow', PACKAGE = 'FeatureHashing', m, index, drop, Rretval)
-}
-
-tag_existence <- function(src, delim) {
-    .Call('FeatureHashing_tag_existence', PACKAGE = 'FeatureHashing', src, delim)
-}
-
-tag_count <- function(src, delim) {
-    .Call('FeatureHashing_tag_count', PACKAGE = 'FeatureHashing', src, delim)
 }
 

@@ -1,6 +1,24 @@
+/*
+ * This file is part of FeatureHashing
+ * Copyright (C) 2014-2015 Wush Wu
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the Free
+ * Software Foundation, either version 3 of the License, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of  MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <cstring>
 #include <Rcpp.h>
-#include "tag.h"
+#include "split.h"
 using namespace Rcpp;
 
 std::vector<std::string> split(const std::string& src, const std::string& delim) {
@@ -17,7 +35,7 @@ std::vector<std::string> split(const std::string& src, const std::string& delim)
 }
 
 //[[Rcpp::export]]
-SEXP tag_existence(CharacterVector src, const std::string& delim) {
+SEXP split_existence(CharacterVector src, const std::string& delim) {
   std::map<std::string, LogicalVector> retval_buffer;
   for(auto i = 0;i < src.size();i++) {
     std::vector<std::string> tokens(split(CHAR(STRING_ELT(src, i)), delim));
@@ -43,7 +61,7 @@ SEXP tag_existence(CharacterVector src, const std::string& delim) {
 }
 
 //[[Rcpp::export]]
-SEXP tag_count(CharacterVector src, const std::string& delim) {
+SEXP split_count(CharacterVector src, const std::string& delim) {
   std::map<std::string, IntegerVector> retval_buffer;
   for(auto i = 0;i < src.size();i++) {
     std::vector<std::string> tokens(split(CHAR(STRING_ELT(src, i)), delim));
