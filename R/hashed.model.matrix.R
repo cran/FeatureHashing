@@ -1,11 +1,12 @@
 #'@title Create a model matrix with feature hashing
 #'
-#'@aliases hashed.value hash.sign
-#'
 #'@importFrom magrittr %>%
 #'@importFrom magrittr %<>%
 #'@importFrom methods new
 #'@importFrom methods checkAtAssignment
+#'@importFrom Matrix colSums
+#'@importFrom Matrix Diagonal
+#'
 #'@importClassesFrom Matrix dgCMatrix
 #'
 #'@param formula \code{formula} or a \code{character} vector of column names (will be expanded to a \code{formula})
@@ -19,6 +20,7 @@
 #'@param is.dgCMatrix logical value. Indicating if the result is \code{dgCMatrix} or \code{CSCMatrix}
 #'@param signed.hash logical value. Indicating if the hashed value is multipled by random sign.
 #'This will reduce the impact of collision. Disable it will enhance the speed.
+#'@param progress logical value. Indicating if the progress bar is displayed or not.
 #'
 #'@details
 #'The \code{hashed.model.matrix} hashes the feature during
@@ -30,8 +32,9 @@
 #'\eqn{h} and \eqn{\xi} with MurmurHash3.
 #'
 #'The formula is parsed via \code{\link{terms.formula}} with "split" as special
-#'keyword. The interaction term is hashed in different ways. Please see example for 
-#'the detailed implementation. The "\code{split}" is used to expand the concatenated feature
+#'keyword. The interaction term is hashed (the reader can try  to expl)in different ways. Please see example for 
+#'the detailed implementation. We provide a helper function: \code{\link{hashed.interaction.value}} to show show the index after interaction.
+#'The "\code{split}" is used to expand the concatenated feature
 #'such as "10129,10024,13866,10111,10146,10120,10115,10063" which represents the occurrence of 
 #'multiple categorical variable: "10129", "10024", "13866", "10111", "10146", "10120", "10115", and
 #'"10063". The \code{hashed.model.matrix} will expand the concatenated feature and produce
@@ -39,9 +42,12 @@
 #'
 #'The "\code{split}" accepts two parameters:
 #'\itemize{
-#'  \item \code{delim}, character value to use as delimiter for splitting.
-#'  \item \code{type}, one of \code{existence} or \code{count}.
+#'  \item \code{delim}, character value to use as delimiter for splitting;
+#'  \item \code{type}, one of \code{existence}, \code{count} or \code{tf-idf}.
 #'}
+#'
+#'If \code{type} is set to \code{tf-idf}, then \code{signed.hash} should be set to \code{FALSE}.
+#'
 #'The user could explore the behavior via function \code{\link{simulate.split}}.
 #'
 #'The argument \code{transpose} affects the size of the returned object in the following way.
@@ -185,23 +191,32 @@
 #'names(mapping)
 #'
 #'@export
-#'@importFrom methods new
-#'@importFrom methods checkAtAssignment
+#'@importFrom methods new as checkAtAssignment as
+#'@importFrom stats as.formula terms.formula
+#'@importFrom utils getParseData head
 #'@importClassesFrom Matrix dgCMatrix
-#'@aliases hashed.value hash.sign
+#'@aliases hashed.value hash.sign hashed.interaction.value
 hashed.model.matrix <- function(formula, data, hash.size = 2^18, transpose = FALSE, 
-                                create.mapping = FALSE, is.dgCMatrix = TRUE, signed.hash = TRUE
-                                ) {
+                                create.mapping = FALSE, is.dgCMatrix = TRUE, signed.hash = FALSE,
+                                progress = FALSE) {
   stopifnot(hash.size >= 0)
   stopifnot(is.data.frame(data))
   stopifnot(class(formula) %in% c("formula", "character"))
   
   if(class(formula) == "character") formula %<>% paste(collapse = " + ") %>% paste("~", .) %>% as.formula
   
+  tf.idf.string <- "type = \"tf-idf\""
+  
+  tf.idf <- as.character(formula) %>% grep(tf.idf.string, .) %>% sum > 1
+  
+  if(tf.idf){
+    if(signed.hash) stop("If you use tf-idf, parameter signed.hash should be set to FALSE.")
+    formula <- as.character(formula) %>% gsub(pattern = tf.idf.string, replacement = "type = \"count\"", x = .) %>% paste0(collapse = " ") %>% as.formula
+  }
   
   tf <- terms.formula(formula, data = data, specials = "split")
   retval <- new(.CSCMatrix)
-  .hashed.model.matrix.dataframe(tf, data, hash.size, transpose, retval, create.mapping, signed.hash)
+  .hashed.model.matrix.dataframe(tf, data, hash.size, transpose, retval, create.mapping, signed.hash, progress)
   class(retval) <- .CSCMatrix
   retval@Dimnames[[2]] <- paste(seq_len(retval@Dim[2]))
   if (is.dgCMatrix) {
@@ -209,8 +224,8 @@ hashed.model.matrix <- function(formula, data, hash.size = 2^18, transpose = FAL
     for(name in setdiff(names(attributes(retval)), names(attributes(retval2)))) {
       attr(retval2, name) <- attr(retval, name)
     }
-    retval2
-  } else retval
+    if (tf.idf) tf.idf.transfo(retval2) else retval2
+  } else if (tf.idf) tf.idf.transfo(retval) else retval
 }
 
 # This is the function called from C to parse the \code{split} function.
@@ -237,6 +252,11 @@ parse_split <- function(text) {
     }
     list(reference_name = reference_name, delim = delim, type = type)
   }, finally = {options(keep.source = origin.keep.source)})
+}
+
+tf.idf.transfo <- function(hash.matrix){
+  idf.train <- log(nrow(hash.matrix)/colSums(hash.matrix)) %>% Diagonal(x = .)
+  hash.matrix %*% idf.train
 }
 
 # Avoid error messages during CRAN check.

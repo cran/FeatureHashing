@@ -1,6 +1,15 @@
 FeatureHashing
 ==============
 
+Linux: [![Travis-ci Status](https://travis-ci.org/wush978/FeatureHashing.svg?branch=master)](https://travis-ci.org/wush978/FeatureHashing)
+Win : [![Build status](https://ci.appveyor.com/api/projects/status/bm4lpxn5f07d8klj/branch/master?svg=true)](https://ci.appveyor.com/project/wush978/featurehashing/branch/master)
+OS X: [![Travis-ci Status](https://travis-ci.org/wush978/FeatureHashing.svg?branch=osx)](https://travis-ci.org/wush978/FeatureHashing)
+
+
+[![Coverage Status](https://img.shields.io/coveralls/wush978/FeatureHashing.svg)](https://coveralls.io/r/wush978/FeatureHashing?branch=master)
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/FeatureHashing)](http://cran.r-project.org/package=FeatureHashing/)
+[![rstudio mirror downloads](http://cranlogs.r-pkg.org/badges/FeatureHashing)](https://github.com/metacran/cranlogs.app)
+
 Implement feature hashing with R
 
 
@@ -48,7 +57,7 @@ The following scripts show how to use the `FeatureHashing` to construct `Matrix:
 
 The dataset is a sample from iPinYou dataset which is described in (Zhang, Yuan, Wang, and Shen, 2014).
 
-### Logistic Regression with [`glmnet`](http://cran.r-project.org/web/packages/glmnet/index.html)
+### Logistic Regression with [`glmnet`](http://cran.r-project.org/package=glmnet)
 
 
 ```r
@@ -85,7 +94,8 @@ library(glmnet)
 
 ```
 ## Loading required package: Matrix
-## Loaded glmnet 1.9-8
+## Loading required package: foreach
+## Loaded glmnet 2.0-2
 ```
 
 ```r
@@ -96,10 +106,10 @@ auc(ipinyou.test$IsClick, p.lr)
 ```
 
 ```
-## [1] 0.5077
+## [1] 0.5076923
 ```
 
-### Gradient Boosted Decision Tree with [`xgboost`](http://cran.r-project.org/web/packages/xgboost/index.html)
+### Gradient Boosted Decision Tree with [`xgboost`](http://cran.r-project.org/package=xgboost)
 
 Following the script above, 
 
@@ -116,7 +126,7 @@ glmnet::auc(ipinyou.test$IsClick, p.lm)
 ```
 
 ```
-## [1] 0.6555
+## [1] 0.6554945
 ```
 
 
@@ -136,7 +146,7 @@ auc(ipinyou.train$IsClick, attr(ftprl, "predict"))
 ```
 
 ```
-## [1] 0.5986
+## [1] 0.5986472
 ```
 
 If we use the same algorithm to predict the click through rate of the 3rd season of iPinYou, the overall AUC will be 0.77 which is comparable to the overall AUC of the 3rd season 0.76 reported in (Zhang, Yuan, Wang, et al., 2014).
