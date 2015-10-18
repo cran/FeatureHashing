@@ -128,7 +128,7 @@ m.test &lt;-<span class="st"> </span><span class="kw">hashed.model.matrix</span>
   <span class="dt">family =</span> <span class="st">&quot;binomial&quot;</span>)<span class="co">#, type.measure = &quot;auc&quot;)</span>
 p.lr &lt;-<span class="st"> </span><span class="kw">predict</span>(cv.g.lr, m.test, <span class="dt">s=</span><span class="st">&quot;lambda.min&quot;</span>)
 <span class="kw">auc</span>(ipinyou.test$IsClick, p.lr)</code></pre>
-<pre><code>## [1] 0.5</code></pre>
+<pre><code>## [1] 0.5187244</code></pre>
 </div>
 <div id="gradient-boosted-decision-tree-with-xgboost" class="section level2">
 <h2><span class="header-section-number">3.2</span> Gradient Boosted Decision Tree with <a href="http://cran.r-project.org/package=xgboost"><code>xgboost</code></a></h2>
@@ -141,7 +141,7 @@ if(<span class="kw">require</span>(<span class="st">&quot;xgboost&quot;</span>))
   glmnet::<span class="kw">auc</span>(ipinyou.test$IsClick, p.lm)  
 }</code></pre>
 <pre><code>## Loading required package: xgboost</code></pre>
-<pre><code>## [1] 0.6306328</code></pre>
+<pre><code>## [1] 0.6425303</code></pre>
 </div>
 <div id="per-coordinate-ftrl-proximal-with-l_1-and-l_2-regularization-for-logistic-regression" class="section level2">
 <h2><span class="header-section-number">3.3</span> Per-Coordinate FTRL-Proximal with <span class="math">\(L_1\)</span> and <span class="math">\(L_2\)</span> Regularization for Logistic Regression</h2>

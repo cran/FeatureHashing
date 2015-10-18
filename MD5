@@ -1,5 +1,5 @@
 da61861a605830daac5db0b0eae35b7a *Changelog
-6e9396366e1c792c4d2d26fff6b73486 *DESCRIPTION
+3f0964cc9fd249c3624359ceeb38c978 *DESCRIPTION
 84dcc94da3adb52b53ae4fa38fe49e5d *LICENSE
 9ef7b53911a6959e4438c73bfb2f297b *NAMESPACE
 cb5ac1f29c200ff98b50871af0dc86ad *R/RcppExports.R
@@ -15,7 +15,7 @@ bb81ac70d7764f64b934bdc9fa0b066b *data/ipinyou.rda
 9f468969a9ef1811b7d7435d20e128db *data/test.tag.rda
 526b1ab90867ffa3ee8b9d4aee7f549b *inst/doc/FeatureHashing.R
 83a9033c867c11d9f5a2f92deafd2a32 *inst/doc/FeatureHashing.Rmd
-af5271dede0a30a9edc26e7a34cce7f1 *inst/doc/FeatureHashing.html
+7f79cea8a93a2f3c96263997a56e2894 *inst/doc/FeatureHashing.html
 122ace39f8562dd87af12c0eebed5c37 *inst/doc/SentimentAnalysis.Rmd
 8234d8a3994452487c18fc3e68910271 *inst/doc/SentimentAnalysis.html
 347143c1c9cc5e513032dfc6ffcdc268 *inst/ftprl.R
@@ -36,8 +36,8 @@ eeeda23b04db54ac11bb18628d479cd0 *src/RcppExports.cpp
 60b0d9d0d31c803c96f64988ec44bb49 *src/bswap_32.h
 3e0ad347ab0c598f0926bb7c1e0416a0 *src/digest.c
 85b45be4b1f8b474979add25d75c138c *src/digestlocal.h
-bd5a78e0051bfac72d6090526aa5c274 *src/hash_function.h
-092ff00116ac147ed9b105428b35a544 *src/hash_internal.cpp
+d64fe41a64908508634867a52b2dde89 *src/hash_function.h
+1bebbcf62650f1a884db1456108bc9f3 *src/hash_internal.cpp
 0f52bdcb6e8f98b1395cb08b669a9e5a *src/hashed_model_matrix.cpp
 8fbd2650f3b2f3aae6e267a6ff2b4fa9 *src/hashed_model_matrix.h
 b1169a28a8ee8e3e587b679bbd9df67a *src/intToRaw.cpp
@@ -54,7 +54,7 @@ acce070c75b102e6ab3f1ac8a9eaf41f *tests/test-hash.mapping.R
 e2a1ecfdad3665d1de942dd823e35c9f *tests/test-interpret.tag.R
 4261c92b94e0b911f0fa7b3693df13b7 *tests/test-memcheck.R
 3bb7ea902cc06d2b1f95dc168796e6a6 *tests/test-product.R
-9e5cf8d45e94e7101266e2ef2c6f12cf *tests/test-progress_bar.R
+6256b50e9af8dfc1f2f72add935a99f6 *tests/test-progress_bar.R
 8bd270d2f4599f6be15e519b50158e85 *tests/test-signed.hash.R
 575215b025b0c7b7710607bd7fd5b300 *tests/test-split.R
 98ef059a4487bbfda0579a35de7f01f1 *tests/test-subsetting.R
