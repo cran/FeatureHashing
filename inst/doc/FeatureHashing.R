@@ -1,9 +1,9 @@
-## ----setup, include=FALSE------------------------------------------------
+## ----setup, include=FALSE-----------------------------------------------------
 # library(knitcitations)
 # bib <- read.bibtex("README.bib")
 # citep(bib[[1]])
 
-## ----lr------------------------------------------------------------------
+## ----lr-----------------------------------------------------------------------
 # The following script assumes that the data.frame
 # of the training dataset and testing dataset are 
 # assigned to variable `ipinyou.train` and `ipinyou.test`
@@ -31,19 +31,21 @@ library(glmnet)
 cv.g.lr <- cv.glmnet(m.train, ipinyou.train$IsClick,
   family = "binomial")#, type.measure = "auc")
 p.lr <- predict(cv.g.lr, m.test, s="lambda.min")
-auc(ipinyou.test$IsClick, p.lr)
 
-## ----xgboost-------------------------------------------------------------
+library(pROC)
+auc(ipinyou.test$IsClick, c(p.lr))
+
+## ----xgboost------------------------------------------------------------------
 # GBDT with xgboost
 if(require("xgboost")){
   cv.g.gdbt <- xgboost(m.train, ipinyou.train$IsClick, max.depth=7, eta=0.1, subsample = 0.7, colsample_bytree = 0.7,
-    nround = 100, objective = "binary:logistic", verbose = ifelse(interactive(), 1, 0))
+    nround = 10, objective = "binary:logistic", verbose = ifelse(interactive(), 1, 0))
   p.lm <- predict(cv.g.gdbt, m.test)
-  glmnet::auc(ipinyou.test$IsClick, p.lm)  
+  auc(ipinyou.test$IsClick, p.lm)  
 }
 
 
-## ----ftprl---------------------------------------------------------------
+## ----ftprl--------------------------------------------------------------------
 source(system.file("ftprl.R", package = "FeatureHashing"))
 
 m.train <- hashed.model.matrix(f, ipinyou.train, 2^16, transpose = TRUE)
