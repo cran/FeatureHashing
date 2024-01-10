@@ -201,9 +201,9 @@ hashed.model.matrix <- function(formula, data, hash.size = 2^18, transpose = FAL
                                 progress = FALSE) {
   stopifnot(hash.size >= 0)
   stopifnot(is.data.frame(data))
-  stopifnot(class(formula) %in% c("formula", "character"))
+  stopifnot(inherits(formula, "formula") | inherits(formula, "character"))
   
-  if(is.character(formula)) formula %<>% paste(collapse = " + ") %>% paste("~", .) %>% as.formula
+  if(inherits(formula, "character")) formula %<>% paste(collapse = " + ") %>% paste("~", .) %>% as.formula
   
   tf.idf.string <- "type = \"tf-idf\""
   
